@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1092525721003",
+    "project_id": "grenadesapp-71747",
+    "storage_bucket": "grenadesapp-71747.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092525721003:android:2df21d045b12ebf530feee",
+        "android_client_info": {
+          "package_name": "com.example.grenadesapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAP3OdPxL_L0jMe7IiHQH760CNmTbQJvM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
