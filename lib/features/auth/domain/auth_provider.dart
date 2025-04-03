@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:grenadesapp/features/auth/data/auth_service.dart';
@@ -12,47 +11,85 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
-  AuthNotifier(this._authService) : super(AuthState.initial()) {}
+  AuthNotifier(this._authService) : super(AuthState.initial());
 
   void clearError() {
     state = state.copyWith(errorMessage: null);
   }
 
   Future<void> signIn(String email, String password) async {
+    if (email.isEmpty || password.isEmpty) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Пожалуйста, заполните все поля',
+      );
+      return;
+    }
+
     state = AuthState(isLoading: true, errorMessage: null);
 
     try {
       final user = await _authService.signIn(email, password);
-      state = state.copyWith(user: user, isLoading: false);
+      if (user != null) {
+        state =
+            state.copyWith(user: user, isLoading: false, errorMessage: null);
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Ошибка входа: пользователь не найден',
+        );
+      }
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
+      );
     }
   }
 
   Future<void> register(String email, String password, String username) async {
+    if (email.isEmpty || password.isEmpty || username.isEmpty) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Пожалуйста, заполните все поля',
+      );
+      return;
+    }
+
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final user = await _authService.register(email, password);
 
-      if (user == null) throw Exception("Ошибка регистрации");
+      if (user == null) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Ошибка регистрации: пользователь не создан',
+        );
+        return;
+      }
 
       await _authService.saveUsername(user.uid, username);
-
-      state = state.copyWith(user: user, isLoading: false);
+      state = state.copyWith(user: user, isLoading: false, errorMessage: null);
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
+      );
     }
   }
 
   Future<void> signOut(BuildContext context) async {
     try {
-      await FirebaseAuth.instance.signOut();
-      print('Пользователь вышел');
+      await _authService.signOut();
+      state = AuthState.initial();
+
       if (context.mounted) {
         Navigator.pushReplacementNamed(context, '/');
       }
     } catch (e) {
-      print('Ошибка при выходе: $e');
+      state = state.copyWith(
+        errorMessage: 'Ошибка при выходе из аккаунта',
+      );
     }
   }
 }

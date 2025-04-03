@@ -1,26 +1,35 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grenadesapp/core/constants/app_contants.dart';
+import 'package:grenadesapp/features/maps/data/grenade_service.dart';
 import 'package:grenadesapp/features/maps/models/game_map.dart';
 import 'package:grenadesapp/features/maps/widgets/maps_list_builder.dart';
+import 'package:grenadesapp/features/video/domain/usecases/get_videos_use_case.dart';
+import 'package:grenadesapp/features/welcome/views/welcome_page.dart';
 
 class MapsPage extends StatefulWidget {
-  const MapsPage({super.key});
+  final GetVideosUseCase getVideosUseCase;
+
+  const MapsPage({super.key, required this.getVideosUseCase});
 
   @override
   State<MapsPage> createState() => _MapsPageState();
 }
 
 class _MapsPageState extends State<MapsPage> {
-  bool isSearchVisible = false;
-  TextEditingController searchController = TextEditingController();
-  List<GameMap> filteredMaps = [];
+  late final GrenadeService grenadeService;
 
   @override
   void initState() {
     super.initState();
     filteredMaps = maps;
+    grenadeService = GrenadeService(firestore: FirebaseFirestore.instance);
   }
+
+  bool isSearchVisible = false;
+  TextEditingController searchController = TextEditingController();
+  List<GameMap> filteredMaps = [];
 
   void _filterMaps(String query) {
     setState(() {
@@ -28,6 +37,101 @@ class _MapsPageState extends State<MapsPage> {
           .where((map) => map.name.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
+  }
+
+  Widget _buildAuthButton() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      // Показываем кнопку входа
+      return GestureDetector(
+        onTap: () => Navigator.pushNamed(context, '/login'),
+        child: Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: const Icon(
+            Icons.login_rounded,
+            color: Colors.orange,
+            size: 24,
+          ),
+        ),
+      );
+    } else {
+      // Показываем кнопку выхода
+      return GestureDetector(
+        onTap: () async {
+          final result = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF21222E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Text(
+                'Выйти',
+                style: TextStyle(color: Colors.white),
+              ),
+              content: const Text(
+                'Вы уверены, что хотите выйти?',
+                style: TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text(
+                    'Отмена',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text(
+                    'Выйти',
+                    style: TextStyle(color: Colors.orange),
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          if (result == true && context.mounted) {
+            try {
+              await FirebaseAuth.instance.signOut();
+              grenadeService.clearCache();
+
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WelcomePage()),
+                  (route) => false,
+                );
+              }
+            } catch (e) {
+              print('Ошибка при выходе: $e');
+            }
+          }
+        },
+        child: Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: const Icon(
+            Icons.logout_rounded,
+            color: Colors.orange,
+            size: 24,
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -104,86 +208,7 @@ class _MapsPageState extends State<MapsPage> {
                                       ),
                                     ),
                                     const SizedBox(width: 12),
-                                    GestureDetector(
-                                      onTap: () async {
-                                        final result = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            backgroundColor:
-                                                const Color(0xFF21222E),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                            ),
-                                            title: const Text(
-                                              'Выйти',
-                                              style: TextStyle(
-                                                  color: Colors.white),
-                                            ),
-                                            content: const Text(
-                                              'Вы уверены, что хотите выйти?',
-                                              style: TextStyle(
-                                                  color: Colors.white70),
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                    context, false),
-                                                child: const Text(
-                                                  'Отмена',
-                                                  style: TextStyle(
-                                                      color: Colors.white70),
-                                                ),
-                                              ),
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                    context, true),
-                                                child: const Text(
-                                                  'Выйти',
-                                                  style: TextStyle(
-                                                      color: Colors.orange),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-
-                                        if (result == true) {
-                                          try {
-                                            await FirebaseAuth.instance
-                                                .signOut();
-
-                                           
-                                            await FirebaseAuth.instance
-                                                .authStateChanges()
-                                                .first;
-
-                                           
-                                            if (context.mounted) {
-                                              Navigator.pushReplacementNamed(
-                                                  context, '/');
-                                            }
-                                          } catch (e) {
-                                            print('Ошибка при выходе: $e');
-                                          }
-                                        }
-                                      },
-                                      child: Container(
-                                        width: 48,
-                                        height: 48,
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(15),
-                                        ),
-                                        child: const Icon(
-                                          Icons.logout_rounded,
-                                          color: Colors.orange,
-                                          size: 24,
-                                        ),
-                                      ),
-                                    ),
+                                    _buildAuthButton(),
                                   ],
                                 ),
                               ],
@@ -228,14 +253,17 @@ class _MapsPageState extends State<MapsPage> {
                         ),
                       ),
                       Expanded(
-                        child: MapsListBuilder(maps: filteredMaps),
+                        child: MapsListBuilder(
+                          grenadeService: grenadeService,
+                          maps: filteredMaps,
+                          videoRepository: widget.getVideosUseCase.repository,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-       
             if (isSearchVisible)
               Container(
                 decoration: BoxDecoration(

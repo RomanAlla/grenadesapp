@@ -159,7 +159,16 @@ class RegisterPage extends ConsumerWidget {
                               usernameController.text,
                             );
                             if (ref.read(authProvider).user != null) {
-                              Navigator.pushNamed(context, '/home');
+                              final args = ModalRoute.of(context)
+                                  ?.settings
+                                  .arguments as Map<String, dynamic>?;
+                              if (args != null &&
+                                  args['returnRoute'] == '/video_detail') {
+                                Navigator.pop(context);
+                              } else {
+                                Navigator.pushReplacementNamed(
+                                    context, '/home');
+                              }
                             }
                           },
                           style: ElevatedButton.styleFrom(

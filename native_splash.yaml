@@ -1,7 +1,12 @@
 flutter_native_splash:
+  color: "#21222E"
+  image: lib/assets/images/logo_sfu.png
   android: true
   ios: true
   web: false
 
-  color: "#21222E"
-  image: "lib/assets/images/my_logo.png"
+  android_12:
+    image: lib/assets/images/logo_sfu.png
+    icon_background_color: "#21222E"
+    image_dark: lib/assets/images/logo_sfu.png
+    icon_background_color_dark: "#21222E"

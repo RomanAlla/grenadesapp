@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:grenadesapp/core/constants/app_contants.dart';
-import 'package:grenadesapp/features/ai_chat/views/chat_page.dart';
-import 'package:grenadesapp/features/favourite/views/favourite_page.dart';
 import 'package:grenadesapp/features/maps/views/maps_page.dart';
+import 'package:grenadesapp/features/favourite/views/favourite_page.dart';
+import 'package:grenadesapp/features/video/domain/usecases/get_videos_use_case.dart';
 
 class NavigationPage extends StatefulWidget {
-  const NavigationPage({super.key});
+  final GetVideosUseCase getVideosUseCase;
+  const NavigationPage({super.key, required this.getVideosUseCase});
 
   @override
   State<NavigationPage> createState() => _NavigationPageState();
@@ -14,11 +15,12 @@ class NavigationPage extends StatefulWidget {
 class _NavigationPageState extends State<NavigationPage> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = [
-    MapsPage(),
-    ChatPage(),
-    FavouritePage(),
-  ];
+  List<Widget> get _pages {
+    return [
+      MapsPage(getVideosUseCase: widget.getVideosUseCase),
+      const FavouritePage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,9 +47,8 @@ class _NavigationPageState extends State<NavigationPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildNavItem(0, Icons.map_outlined, Icons.map, 'Карты'),
-              _buildNavItem(1, Icons.chat_outlined, Icons.chat, 'AI Чат'),
-              _buildNavItem(2, Icons.favorite_outline_outlined, Icons.favorite,
-                  'Избранное'),
+              _buildNavItem(
+                  1, Icons.favorite_outline, Icons.favorite, 'Избранное'),
             ],
           ),
         ),

@@ -130,7 +130,12 @@ class LoginPage extends ConsumerWidget {
 
                             final currentState = ref.read(authProvider);
                             if (currentState.user != null) {
-                              Navigator.pushNamed(context, '/home');
+                              final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+                              if (args != null && args['returnRoute'] == '/video_detail') {
+                                Navigator.pop(context);
+                              } else {
+                                Navigator.pushReplacementNamed(context, '/home');
+                              }
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -177,7 +182,12 @@ class LoginPage extends ConsumerWidget {
                             ),
                             TextButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, '/register');
+                                final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+                                Navigator.pushNamed(
+                                  context, 
+                                  '/register',
+                                  arguments: args,
+                                );
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.orange,
@@ -201,3 +211,5 @@ class LoginPage extends ConsumerWidget {
     );
   }
 }
+
+
