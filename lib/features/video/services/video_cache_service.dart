@@ -57,7 +57,7 @@ class VideoCacheService {
     }
   }
 
-  // Сохранение метаданных в SharedPreferences
+
   Future<void> _saveMetadata() async {
     final Map<String, dynamic> encoded = {};
     _metadata.forEach((key, value) {

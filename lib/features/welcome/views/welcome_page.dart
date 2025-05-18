@@ -15,7 +15,7 @@ class WelcomePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              // Верхняя секция с логотипом
+         
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -50,7 +50,7 @@ class WelcomePage extends StatelessWidget {
                 ),
               ),
               const Spacer(flex: 2),
-              // Центральная секция с большим логотипом
+            
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(20),
@@ -69,7 +69,7 @@ class WelcomePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              // Секция с текстом
+        
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -132,7 +132,7 @@ class WelcomePage extends StatelessWidget {
                 ),
               ),
               const Spacer(flex: 3),
-              // Кнопки
+         
               Column(
                 children: [
                   ElevatedButton(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:grenadesapp/core/constants/app_contants.dart';
 import 'package:grenadesapp/features/favorites/views/favorites_page.dart';
 import 'package:grenadesapp/features/maps/views/maps_page.dart';
-import 'package:grenadesapp/features/positions/presentation/views/positions_training_page.dart';
+
 import 'package:grenadesapp/features/positions/presentation/views/select_map_page.dart';
 
 import 'package:grenadesapp/features/video/domain/usecases/get_videos_use_case.dart';
