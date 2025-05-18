@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:grenadesapp/features/video/providers/video_cache_provider.dart';
 
 class VideoModel {
   final String id;
@@ -39,36 +41,27 @@ class VideoModel {
   Future<List<VideoModel>> getVideos(String mapName) async {
     try {
       final mapPath = mapName.toLowerCase().trim();
-      print('=== DEBUG INFO ===');
-      print('Accessing map: $mapPath');
-      
-      
+
       final mapDoc = await FirebaseFirestore.instance
           .collection('maps')
           .doc(mapPath)
           .get();
-          
-      print('Map document exists: ${mapDoc.exists}');
+
       if (!mapDoc.exists) {
-        print('Map document not found!');
         return [];
       }
 
-    
       final querySnapshot = await FirebaseFirestore.instance
           .collection('maps')
           .doc(mapPath)
           .collection('grenades')
           .get();
 
-      print('Grenades found: ${querySnapshot.docs.length}');
-      
       if (querySnapshot.docs.isNotEmpty) {
-       
         final firstDoc = querySnapshot.docs.first;
         print('First grenade data: ${firstDoc.data()}');
       }
-      
+
       return querySnapshot.docs
           .map((doc) => VideoModel(
                 id: doc.id,
@@ -82,5 +75,11 @@ class VideoModel {
       print('Error getting videos: $e');
       return [];
     }
+  }
+
+
+  Future<String?> getCachedVideoUrl(WidgetRef ref) async {
+    final videoCache = ref.read(videoCacheProvider);
+    return await videoCache.getCachedVideo(id, videoUrl);
   }
 }

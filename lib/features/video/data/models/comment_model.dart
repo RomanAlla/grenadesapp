@@ -5,6 +5,7 @@ class CommentModel {
   final String text;
   final String authorId;
   final String authorEmail;
+  final String authorName;
   final DateTime timestamp;
 
   CommentModel({
@@ -12,6 +13,7 @@ class CommentModel {
     required this.text,
     required this.authorId,
     required this.authorEmail,
+    required this.authorName,
     required this.timestamp,
   });
 
@@ -21,6 +23,7 @@ class CommentModel {
       text: json['text'] ?? '',
       authorId: json['authorId'] ?? '',
       authorEmail: json['authorEmail'] ?? '',
+      authorName: json['authorName'] ?? '',
       timestamp: (json['timestamp'] as Timestamp).toDate(),
     );
   }
@@ -30,6 +33,7 @@ class CommentModel {
       'text': text,
       'authorId': authorId,
       'authorEmail': authorEmail,
+      'authorName': authorName,
       'timestamp': Timestamp.fromDate(timestamp),
     };
   }

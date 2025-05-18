@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flick_video_player/flick_video_player.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+
 
 class VideoPlayerPage extends StatefulWidget {
   final String videoUrl;
@@ -33,16 +35,25 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     try {
       String videoUrl = widget.videoUrl;
       if (videoUrl.contains('drive.google.com')) {
-        final fileId = videoUrl.split('/d/')[1].split('/')[0];
-        videoUrl = 'https://drive.google.com/uc?export=download&id=$fileId';
+        final parts = videoUrl.split('/d/');
+        if (parts.length > 1) {
+          final fileIdParts = parts[1].split('/');
+          if (fileIdParts.isNotEmpty) {
+            final fileId = fileIdParts[0];
+            videoUrl = 'https://drive.google.com/uc?export=download&id=$fileId';
+          }
+        }
       }
 
+      final file = await DefaultCacheManager().getSingleFile(videoUrl);
+
+      if (_isDisposed) return;
+
       flickManager = FlickManager(
-        videoPlayerController: VideoPlayerController.networkUrl(
-          Uri.parse(videoUrl),
-        ),
+        videoPlayerController: VideoPlayerController.file(file),
         autoPlay: true,
       );
+      print('Loaded video using CacheManager in PlayerPage: ${file.path}');
 
       if (!_isDisposed && mounted) {
         setState(() {
@@ -50,7 +61,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         });
       }
     } catch (e) {
-      print('Ошибка инициализации видео: $e');
+      print('Ошибка инициализации видео в VideoPlayerPage: $e');
     }
   }
 

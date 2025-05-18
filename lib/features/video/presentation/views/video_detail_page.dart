@@ -6,8 +6,10 @@ import 'package:grenadesapp/features/video/data/models/video_model.dart';
 import 'package:flick_video_player/flick_video_player.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
-class VideoDetailPage extends StatefulWidget {
+class VideoDetailPage extends ConsumerStatefulWidget {
   final VideoModel video;
   final String mapName;
 
@@ -15,10 +17,10 @@ class VideoDetailPage extends StatefulWidget {
       {super.key, required this.video, required this.mapName});
 
   @override
-  State<VideoDetailPage> createState() => _VideoDetailPageState();
+  ConsumerState<VideoDetailPage> createState() => _VideoDetailPageState();
 }
 
-class _VideoDetailPageState extends State<VideoDetailPage> {
+class _VideoDetailPageState extends ConsumerState<VideoDetailPage> {
   late FlickManager flickManager;
   final TextEditingController _commentController = TextEditingController();
   bool _isInitialized = false;
@@ -32,11 +34,11 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
   @override
   void initState() {
     super.initState();
-    _initializePlayer();
     _updateAuthState();
     _checkIfLiked();
     _checkIfFavorited();
     _getLikeCount();
+    _initializePlayer();
 
     _authStateSubscription =
         FirebaseAuth.instance.authStateChanges().listen((user) {
@@ -63,17 +65,30 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
 
     try {
       String videoUrl = widget.video.videoUrl;
+     
       if (videoUrl.contains('drive.google.com')) {
-        final fileId = videoUrl.split('/d/')[1].split('/')[0];
-        videoUrl = 'https://drive.google.com/uc?export=download&id=$fileId';
+        final parts = videoUrl.split('/d/');
+        if (parts.length > 1) {
+          final fileIdParts = parts[1].split('/');
+          if (fileIdParts.isNotEmpty) {
+            final fileId = fileIdParts[0];
+            videoUrl = 'https://drive.google.com/uc?export=download&id=$fileId';
+          }
+        }
       }
 
+  
+      final file = await DefaultCacheManager().getSingleFile(videoUrl);
+
+      if (_isDisposed) return; 
+
+
       flickManager = FlickManager(
-        videoPlayerController: VideoPlayerController.networkUrl(
-          Uri.parse(videoUrl),
-        ),
+        videoPlayerController: VideoPlayerController.file(file),
         autoPlay: true,
       );
+      print(
+          'Loaded video using CacheManager: ${file.path}'); 
 
       if (!_isDisposed && mounted) {
         setState(() {
@@ -81,31 +96,44 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
         });
       }
     } catch (e) {
+      
+      print('Ошибка инициализации видео в VideoDetailPage: $e');
       if (!_isDisposed && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка воспроизведения видео: $e')),
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ошибка воспроизведения видео: $e')),
+          );
+        });
       }
     }
   }
 
   Future<void> _checkIfLiked() async {
-    if (!_isUserAuthenticated) return;
+    if (!_isUserAuthenticated) {
+      setState(() {
+        _isLiked = false;
+      });
+      return;
+    }
 
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) return;
+      final userId = FirebaseAuth.instance.currentUser!.uid;
+     
 
-      final doc = await FirebaseFirestore.instance
-          .collection('videos')
+      final likeDoc = await FirebaseFirestore.instance
+          .collection('maps')
+          .doc(widget.mapName.toLowerCase())
+          .collection('grenades')
           .doc(widget.video.id)
           .collection('likes')
           .doc(userId)
           .get();
 
+   
+
       if (mounted) {
         setState(() {
-          _isLiked = doc.exists;
+          _isLiked = likeDoc.exists;
         });
       }
     } catch (e) {
@@ -139,12 +167,18 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
 
   Future<void> _getLikeCount() async {
     try {
+     
+
       final snapshot = await FirebaseFirestore.instance
-          .collection('videos')
+          .collection('maps')
+          .doc(widget.mapName.toLowerCase())
+          .collection('grenades')
           .doc(widget.video.id)
           .collection('likes')
           .count()
           .get();
+
+   
 
       if (mounted) {
         setState(() {
@@ -158,24 +192,31 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
 
   Future<void> _toggleLike() async {
     if (!_isUserAuthenticated) {
+     
       return;
     }
 
     try {
       final userId = FirebaseAuth.instance.currentUser!.uid;
-      final likeRef = FirebaseFirestore.instance
-          .collection('videos')
-          .doc(widget.video.id)
-          .collection('likes')
-          .doc(userId);
+     
+
+      final grenadeRef = FirebaseFirestore.instance
+          .collection('maps')
+          .doc(widget.mapName.toLowerCase())
+          .collection('grenades')
+          .doc(widget.video.id);
+
+      final likeRef = grenadeRef.collection('likes').doc(userId);
 
       if (_isLiked) {
+  
         await likeRef.delete();
         setState(() {
           _isLiked = false;
           _likeCount--;
         });
       } else {
+    
         await likeRef.set({
           'timestamp': FieldValue.serverTimestamp(),
         });
@@ -184,8 +225,15 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
           _likeCount++;
         });
       }
+   
     } catch (e) {
       print('Ошибка при обновлении лайка: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка при обновлении лайка: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -235,19 +283,24 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser!;
+      final authorName =
+          user.displayName ?? user.email?.split('@')[0] ?? 'Аноним';
+
       await FirebaseFirestore.instance
-          .collection('videos')
+          .collection('maps')
+          .doc(widget.mapName.toLowerCase())
+          .collection('grenades')
           .doc(widget.video.id)
           .collection('comments')
           .add({
         'text': text,
+        'authorName': authorName,
         'authorId': user.uid,
         'authorEmail': user.email,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
       _commentController.clear();
-      // Обновление не требуется, так как используем StreamBuilder
     } catch (e) {
       print('Ошибка при добавлении комментария: $e');
     }
@@ -342,7 +395,9 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
   Widget _buildComments() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('videos')
+          .collection('maps')
+          .doc(widget.mapName.toLowerCase())
+          .collection('grenades')
           .doc(widget.video.id)
           .collection('comments')
           .orderBy('timestamp', descending: true)
@@ -400,7 +455,7 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        comment['authorEmail'] ?? 'Аноним',
+                        comment['authorName'] ?? 'Аноним',
                         style: const TextStyle(
                           color: Colors.orange,
                           fontWeight: FontWeight.bold,
@@ -610,8 +665,8 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
                 ),
               ),
             ),
-            _buildComments(),
             _buildCommentSection(),
+            _buildComments(),
             const SizedBox(height: 16),
           ],
         ),

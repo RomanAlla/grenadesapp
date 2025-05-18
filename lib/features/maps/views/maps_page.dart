@@ -43,7 +43,6 @@ class _MapsPageState extends State<MapsPage> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      // Показываем кнопку входа
       return GestureDetector(
         onTap: () => Navigator.pushNamed(context, '/login'),
         child: Container(
@@ -62,7 +61,7 @@ class _MapsPageState extends State<MapsPage> {
         ),
       );
     } else {
-      // Показываем кнопку выхода
+
       return GestureDetector(
         onTap: () async {
           final result = await showDialog<bool>(
@@ -144,122 +143,115 @@ class _MapsPageState extends State<MapsPage> {
             Column(
               children: [
                 if (isSearchVisible) const SizedBox(height: 110),
-                Expanded(
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            height: 48,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
                               children: [
-                                Container(
-                                  height: 48,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        Icons.rocket_launch,
-                                        color: Colors.orange,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'CS2',
-                                        style: TextStyle(
-                                          color: Colors.orange,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                Icon(
+                                  Icons.rocket_launch,
+                                  color: Colors.orange,
+                                  size: 20,
                                 ),
-                                Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          isSearchVisible = true;
-                                        });
-                                      },
-                                      child: Container(
-                                        width: 48,
-                                        height: 48,
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(15),
-                                        ),
-                                        child: const Icon(
-                                          Icons.search,
-                                          color: Colors.white,
-                                          size: 24,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    _buildAuthButton(),
-                                  ],
+                                SizedBox(width: 8),
+                                Text(
+                                  'CS2',
+                                  style: TextStyle(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),
-                            if (!isSearchVisible) ...[
-                              const SizedBox(height: 24),
-                              const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Найденные\nГранаты',
-                                    style: TextStyle(
-                                      fontSize: 36,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      height: 1.2,
-                                    ),
+                          ),
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    isSearchVisible = true;
+                                  });
+                                },
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(15),
                                   ),
-                                  SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Рекомендуемые карты',
-                                        style: TextStyle(
-                                          color: Colors.orange,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Icon(
-                                        Icons.arrow_forward,
-                                        color: Colors.orange,
-                                        size: 20,
-                                      ),
-                                    ],
+                                  child: const Icon(
+                                    Icons.search,
+                                    color: Colors.white,
+                                    size: 24,
                                   ),
-                                ],
+                                ),
                               ),
+                              const SizedBox(width: 12),
+                              _buildAuthButton(),
                             ],
+                          ),
+                        ],
+                      ),
+                      if (!isSearchVisible) ...[
+                        const SizedBox(height: 24),
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Найденные\nГранаты',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                height: 1.2,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(
+                                  'Рекомендуемые карты',
+                                  style: TextStyle(
+                                    color: Colors.orange,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Icon(
+                                  Icons.arrow_forward,
+                                  color: Colors.orange,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                      ),
-                      Expanded(
-                        child: MapsListBuilder(
-                          grenadeService: grenadeService,
-                          maps: filteredMaps,
-                          videoRepository: widget.getVideosUseCase.repository,
-                        ),
-                      ),
+                      ],
                     ],
+                  ),
+                ),
+                Expanded(
+                  child: MapsListBuilder(
+                    grenadeService: grenadeService,
+                    maps: filteredMaps,
+                    videoRepository: widget.getVideosUseCase.repository,
                   ),
                 ),
               ],

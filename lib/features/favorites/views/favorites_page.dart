@@ -18,8 +18,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = _auth.currentUser?.uid;
-
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -34,8 +32,19 @@ class _FavoritesPageState extends State<FavoritesPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.orange),
       ),
-      body: userId == null
-          ? Center(
+      body: StreamBuilder<User?>(
+        stream: _auth.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.orange),
+            );
+          }
+
+          final userId = snapshot.data?.uid;
+
+          if (userId == null) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -70,84 +79,88 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   ),
                 ],
               ),
-            )
-          : StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection('users')
-                  .doc(userId)
-                  .collection('favorites')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator(color: Colors.orange));
-                }
+            );
+          }
 
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Ошибка загрузки: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  );
-                }
+          return StreamBuilder<QuerySnapshot>(
+            stream: _firestore
+                .collection('users')
+                .doc(userId)
+                .collection('favorites')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                    child: CircularProgressIndicator(color: Colors.orange));
+              }
 
-                final favorites = snapshot.data?.docs
-                        .map((doc) => doc.data() as Map<String, dynamic>)
-                        .toList() ??
-                    [];
-
-                if (favorites.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.star_border,
-                          size: 64,
-                          color: Colors.orange.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'У вас пока нет избранных гранат',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () =>
-                              Navigator.pushReplacementNamed(context, '/home'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text('Найти гранаты'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: favorites.length,
-                  itemBuilder: (context, index) {
-                    final favorite = favorites[index];
-                    return _buildFavoriteItem(favorite);
-                  },
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Ошибка загрузки: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 );
-              },
-            ),
+              }
+
+              final favorites = snapshot.data?.docs
+                      .map((doc) => doc.data() as Map<String, dynamic>)
+                      .toList() ??
+                  [];
+
+              if (favorites.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.star_border,
+                        size: 64,
+                        color: Colors.orange.withOpacity(0.5),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'У вас пока нет избранных гранат',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () =>
+                            Navigator.pushReplacementNamed(context, '/home'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Найти гранаты'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: favorites.length,
+                itemBuilder: (context, index) {
+                  final favorite = favorites[index];
+                  return _buildFavoriteItem(favorite);
+                },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -244,7 +257,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         try {
                           final userId = _auth.currentUser?.uid;
                           if (userId == null) return;
-
                           await _firestore
                               .collection('users')
                               .doc(userId)

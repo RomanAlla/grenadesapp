@@ -1,0 +1,6 @@
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "lib/assets/images/mini_logo_sfu.png"
+  adaptive_icon_background: "#21222E"
+  adaptive_icon_foreground: "lib/assets/images/mini_logo_sfu.png" 

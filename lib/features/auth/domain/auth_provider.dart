@@ -1,7 +1,7 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:grenadesapp/features/auth/data/auth_service.dart';
 import 'package:grenadesapp/features/auth/domain/auth_state.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
@@ -11,85 +11,125 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
-  AuthNotifier(this._authService) : super(AuthState.initial());
 
-  void clearError() {
-    state = state.copyWith(errorMessage: null);
+  AuthNotifier(this._authService) : super(AuthState());
+
+  void resetState() {
+    state = AuthState();
   }
 
-  Future<void> signIn(String email, String password) async {
-    if (email.isEmpty || password.isEmpty) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Пожалуйста, заполните все поля',
-      );
-      return;
-    }
+  void setUser(User? user) {
+    state = state.copyWith(user: user);
+  }
 
-    state = AuthState(isLoading: true, errorMessage: null);
+  void setLoading(bool isLoading) {
+    state = state.copyWith(isLoading: isLoading);
+  }
 
+  Future<String?> register(
+      String email, String password, String username) async {
     try {
-      final user = await _authService.signIn(email, password);
-      if (user != null) {
-        state =
-            state.copyWith(user: user, isLoading: false, errorMessage: null);
-      } else {
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: 'Ошибка входа: пользователь не найден',
-        );
+      state = state.copyWith(isLoading: true);
+
+      if (email.isEmpty || password.isEmpty || username.isEmpty) {
+        state = state.copyWith(isLoading: false);
+        return 'Пожалуйста, заполните все поля';
       }
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString().replaceAll('Exception: ', ''),
-      );
-    }
-  }
 
-  Future<void> register(String email, String password, String username) async {
-    if (email.isEmpty || password.isEmpty || username.isEmpty) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Пожалуйста, заполните все поля',
-      );
-      return;
-    }
+      if (!email.contains('@') || !email.contains('.')) {
+        state = state.copyWith(isLoading: false);
+        return 'Неверный формат email';
+      }
 
-    state = state.copyWith(isLoading: true, errorMessage: null);
-    try {
+      if (password.length < 6) {
+        state = state.copyWith(isLoading: false);
+        return 'Пароль должен содержать не менее 6 символов';
+      }
+
       final user = await _authService.register(email, password);
 
-      if (user == null) {
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: 'Ошибка регистрации: пользователь не создан',
-        );
-        return;
+      if (user != null) {
+        await _authService.saveUsername(user.uid, username);
+        state = state.copyWith(user: user, isLoading: false);
+        return null;
+      } else {
+        state = state.copyWith(isLoading: false);
+        return 'Не удалось создать пользователя';
       }
-
-      await _authService.saveUsername(user.uid, username);
-      state = state.copyWith(user: user, isLoading: false, errorMessage: null);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString().replaceAll('Exception: ', ''),
-      );
+      state = state.copyWith(isLoading: false);
+      return e.toString().replaceAll('Exception: ', '');
     }
   }
 
-  Future<void> signOut(BuildContext context) async {
+  Future<void> sendEmailVerificationLink() async {
     try {
-      await _authService.signOut();
-      state = AuthState.initial();
+      state = state.copyWith(isLoading: true);
+      await _authService.currentUser?.sendEmailVerification();
+      state = state.copyWith(isLoading: false, isEmailVerificationSent: true);
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(isLoading: false);
+        throw Exception('Ошибка при отправке подтверждения email: $e');
+      }
+    }
+  }
 
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/');
+  Future<void> sendPasswordVerificationLink(String email) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      await _authService.sendPasswordVerificationLink(email);
+      state = state.copyWith(isLoading: false, isPasswordResetSent: true);
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(isLoading: false);
+        throw Exception('Ошибка при отправке подтверждения смены пароля: $e');
+      }
+    }
+  }
+
+  Future<String?> signIn(String email, String password) async {
+    try {
+      state = state.copyWith(isLoading: true);
+
+      if (email.isEmpty || password.isEmpty) {
+        state = state.copyWith(isLoading: false);
+        return 'Пожалуйста, заполните все поля';
+      }
+
+      if (!email.contains('@') || !email.contains('.')) {
+        state = state.copyWith(isLoading: false);
+        return 'Неверный формат email';
+      }
+
+      final user = await _authService.signIn(email, password);
+
+      if (user != null) {
+        if (!user.emailVerified) {
+          state = state.copyWith(isLoading: false);
+          return 'Пожалуйста, подтвердите ваш email';
+        }
+        state = state.copyWith(user: user, isLoading: false);
+        return null;
+      } else {
+        state = state.copyWith(isLoading: false);
+        return 'Не удалось войти в аккаунт';
       }
     } catch (e) {
-      state = state.copyWith(
-        errorMessage: 'Ошибка при выходе из аккаунта',
-      );
+      state = state.copyWith(isLoading: false);
+      return e.toString().replaceAll('Exception: ', '');
+    }
+  }
+
+  Future<String?> signOut() async {
+    try {
+      state = state.copyWith(isLoading: true);
+      await _authService.signOut();
+      state = state.copyWith(user: null, isLoading: false);
+      return null;
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+      return e.toString().replaceAll('Exception: ', '');
     }
   }
 }

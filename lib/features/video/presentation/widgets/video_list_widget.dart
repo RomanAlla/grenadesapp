@@ -36,6 +36,16 @@ class VideoListWidget extends ConsumerWidget {
           return matchesSearch && matchesType;
         }).toList();
 
+        if (filteredVideos.isNotEmpty) {
+          // Initiate pre-caching for videos in the list
+          for (final video in filteredVideos) {
+            if (video.videoUrl.isNotEmpty) {
+              // Calling getCachedVideo will trigger download if not cached
+              video.getCachedVideoUrl(ref);
+            }
+          }
+        }
+
         if (filteredVideos.isEmpty) {
           return const Center(
             child: Column(

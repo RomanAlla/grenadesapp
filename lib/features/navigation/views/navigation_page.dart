@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:grenadesapp/core/constants/app_contants.dart';
+import 'package:grenadesapp/features/favorites/views/favorites_page.dart';
 import 'package:grenadesapp/features/maps/views/maps_page.dart';
-import 'package:grenadesapp/features/favourite/views/favourite_page.dart';
+import 'package:grenadesapp/features/positions/presentation/views/positions_training_page.dart';
+import 'package:grenadesapp/features/positions/presentation/views/select_map_page.dart';
+
 import 'package:grenadesapp/features/video/domain/usecases/get_videos_use_case.dart';
 
 class NavigationPage extends StatefulWidget {
@@ -18,7 +21,8 @@ class _NavigationPageState extends State<NavigationPage> {
   List<Widget> get _pages {
     return [
       MapsPage(getVideosUseCase: widget.getVideosUseCase),
-      const FavouritePage(),
+      const FavoritesPage(),
+      const SelectMapPage()
     ];
   }
 
@@ -49,6 +53,8 @@ class _NavigationPageState extends State<NavigationPage> {
               _buildNavItem(0, Icons.map_outlined, Icons.map, 'Карты'),
               _buildNavItem(
                   1, Icons.favorite_outline, Icons.favorite, 'Избранное'),
+              _buildNavItem(
+                  2, Icons.location_on_outlined, Icons.location_on, 'Позиции'),
             ],
           ),
         ),
