@@ -3,13 +3,7 @@ import 'positions_training_page.dart';
 import '../../../../core/constants/app_contants.dart';
 
 class SelectMapPage extends StatelessWidget {
-  final List<String> maps = const [
-    "mirage",
-    "inferno",
-    "dust 2",
-    "nuke",
-    "overpass",
-  ];
+  final List<String> maps = const ["mirage", "inferno", "dust 2", "ancient"];
 
   const SelectMapPage({super.key});
 

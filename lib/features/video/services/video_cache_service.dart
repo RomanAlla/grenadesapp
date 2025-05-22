@@ -91,15 +91,13 @@ class VideoCacheService {
 
  
   Future<String?> _cacheVideo(String videoId, String videoUrl) async {
-    try {
-     
+    try {    
       final cacheDir = await getTemporaryDirectory();
       final videoDir = Directory('${cacheDir.path}/videos');
       if (!await videoDir.exists()) {
         await videoDir.create(recursive: true);
       }
 
-     
       final fileName = '$videoId.mp4';
       final filePath = '${videoDir.path}/$fileName';
 
